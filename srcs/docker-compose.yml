@@ -1,0 +1,34 @@
+services:
+  # web:
+  #   image: web
+  #   container_name: web
+  #   build:
+  #     context: ./nginx
+  #     dockerfile: Dockerfile
+  #   environment:
+  #     - NODE_ENV=production
+  #   volumes:
+  #     - ./html:/usr/share/nginx/html:ro
+  #   ports:
+  #     - "8443:443"                         # ajout essentiel      
+  #   networks:
+  #     - transcendence
+  #   restart: unless-stopped
+  
+  test-fastify:
+      image: test-fastify
+      build:
+        context: ./test-fastify
+        dockerfile: Dockerfile
+      restart: unless-stopped
+      container_name: fastify-dev
+      volumes:
+        - ./test-fastify/app:/app
+        - /app/node_modules
+      command: npm run dev
+      ports: 
+        - "3000:3000"
+
+# networks:
+#     transcendence:
+#       driver: bridge
