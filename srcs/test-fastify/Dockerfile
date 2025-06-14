@@ -1,14 +1,21 @@
+FROM node:latest AS build
+
+WORKDIR /app
+
+COPY ./app/package*.json ./
+
+RUN npm install
+
+COPY ./app/srcs .
+COPY ./app/tsconfig.json .
+
+RUN npm run build
+
 FROM node:latest
 
 WORKDIR /app
 
-COPY app/package*.json ./
-
-RUN npm install -g nodemon
-RUN npm install --save-dev nodemon
-
-COPY ./app/srcs/index.js ./srcs/.
-
-EXPOSE 3000:3000
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist /app/dist
 
 CMD ["npm", "run", "dev"]

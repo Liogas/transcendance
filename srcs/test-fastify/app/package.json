@@ -1,17 +1,23 @@
 {
-  "name": "app",
+  "name": "test-fastify",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "main": "srcs/api.js",
   "scripts": {
-    "dev": "nodemon ./srcs/index.js"
+    "dev": "nodemon --watch srcs --ext ts --exec ts-node srcs/api.ts",
+    "build": "tsc",
+    "start": "node dist/api.js"
   },
-  "author": "glions",
-  "type": "module",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
   "dependencies": {
     "fastify": "^5.4.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.0"
+    "@types/node": "^24.0.1",
+    "typescript": "^5.8.3",
+    "nodemon": "^3.x",
+    "ts-node": "^10.x"
   }
 }
