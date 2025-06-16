@@ -2,6 +2,7 @@
   "name": "test-fastify",
   "version": "1.0.0",
   "main": "srcs/api.js",
+  "type": "module",
   "scripts": {
     "dev": "nodemon --watch srcs --ext ts --exec ts-node srcs/api.ts",
     "build": "tsc",
