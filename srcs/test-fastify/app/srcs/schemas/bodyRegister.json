@@ -1,0 +1,10 @@
+{
+    "title": "BodyRegister Schema",
+    "type": "object",
+    "required": ["name", "pwd"],
+    "properties": {
+        "name": { "type": "string" },
+        "pwd": { "type": "string" }
+    },
+    "additionalProperties": false
+}

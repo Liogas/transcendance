@@ -1,7 +1,53 @@
 import fastify from 'fastify';
 
+const server = fastify({logger: true});
 
-interface IQueryString
+const start = async () => {
+  try {
+    await server.listen({ port: 3000, host: '0.0.0.0' });
+    console.log(`Server listening at localhost:3000`);
+  } catch (err)
+  {
+    server.log.error(err);
+    process.exit(1);
+  }
+};
+
+/*
+* Test pour la notion : json-schema-to-typescript (voir ./schemas/*.json)
+*/
+import BodyRegisterSchema from './schemas/bodyRegister.json';
+import type { BodyRegisterSchema as BodyRegisterSchemaInterface } from './types/bodyRegister';
+
+import HeaderRegisterSchema from './schemas/headersRegister.json';
+import type { HeaderRegisterSchema as HeaderRegisterSchemaInterface } from './types/headersRegister';
+
+import ReplyRegisterSchema from './schemas/replyRegister.json';
+import type { ReplyRegisterSchema as ReplyRegisterSchemaInterface } from './types/replyRegister';
+
+server.post<{
+  Body: BodyRegisterSchemaInterface,
+  Headers: HeaderRegisterSchemaInterface,
+  Reply: ReplyRegisterSchemaInterface
+}>('/register', {
+  schema: {
+    body: BodyRegisterSchema,
+    response: ReplyRegisterSchema,
+    headers: HeaderRegisterSchema
+  }
+}, async (request, reply) => {
+  const {name, pwd} = request.body;
+  const customHeader = request.headers['h-Custom'];
+  console.log(name, pwd, customHeader);
+  reply.code(200).send({success: true});
+});
+
+
+/*
+* Test pour la notion : typebox
+*/
+
+interface IBody
 {
   'name': string;
   'pwd': string;
@@ -9,7 +55,7 @@ interface IQueryString
 
 interface IHeaders
 {
-  'h-Custom': string;
+  'h-custom': string;
 }
 
 interface IReply
@@ -19,10 +65,46 @@ interface IReply
   '4xx': { error: string };
 }
 
-const server = fastify({logger: true});
+import { Type } from '@sinclair/typebox'
+import type { Static } from '@sinclair/typebox'
+
+export const User = Type.Object({
+  name: Type.String(),
+  pwd: Type.String()
+});
+
+export const SuccessReply = Type.Object({
+  success: Type.Boolean()
+});
+
+export const ErrorReply = Type.Object({
+  error: Type.String()
+})
 
 server.post<{
-  Querystring: IQueryString,
+  Body: IBody,
+  Headers: IHeaders,
+  Reply: IReply
+}>('/register_typebox', {
+  schema: {
+    body: User,
+    response: {
+      '2xx': SuccessReply,
+      '4xx': ErrorReply
+    }
+  }
+}, async (request, reply) => {
+  const {name, pwd} = request.body;
+  const customHeader = request.headers['h-custom'];
+  console.log(name, pwd, customHeader);
+  reply.code(200).send({success: true});
+});
+
+/*
+* Test pour les notions : type générique & JSON Schema
+*/
+server.post<{
+  Body: IBody,
   Headers: IHeaders,
   Reply: IReply
 }>('/register', {
@@ -51,24 +133,12 @@ server.post<{
     }
   }
 }, async (request, reply) => {
-  const {name, pwd} = request.query;
+  const {name, pwd} = request.body;
   const customHeader = request.headers['h-Custom'];
   console.log(name, pwd, customHeader);
   reply.code(200).send({success: true});
-  // reply.code(200).send("ZzZ");
-  // reply.code(404).send({error: 'Not found'});
-  // return `logged in!`;
 });
 
-const start = async () => {
-  try {
-    await server.listen({ port: 3000, host: '0.0.0.0' });
-    console.log(`Server listening at localhost:3000`);
-  } catch (err)
-  {
-    server.log.error(err);
-    process.exit(1);
-  }
-};
+
 
 start();

@@ -4,21 +4,24 @@
   "main": "srcs/api.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon --watch srcs --ext ts --exec ts-node srcs/api.ts",
+    "dev": "npm run compile-schemas && nodemon --watch srcs --ext ts --exec ts-node --esm srcs/api.ts",
     "build": "tsc",
-    "start": "node dist/api.js"
+    "start": "node dist/api.js",
+    "compile-schemas": "json2ts -i ./srcs/schemas -o ./srcs/types"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "fastify": "^5.4.0"
+    "fastify": "^5.4.0",
+    "@sinclair/typebox": "^0.34.35"
   },
   "devDependencies": {
     "@types/node": "^24.0.1",
     "typescript": "^5.8.3",
     "nodemon": "^3.x",
-    "ts-node": "^10.x"
+    "ts-node": "^10.x",
+    "json-schema-to-typescript": "^15.0.4"
   }
 }

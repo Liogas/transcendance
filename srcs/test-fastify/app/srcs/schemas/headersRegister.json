@@ -1,0 +1,7 @@
+{
+    "title": "HeaderRegister Schema",
+    "type": "object",
+    "properties": {
+        "h-custom": { "type": "string" }
+    }
+}
