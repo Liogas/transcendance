@@ -1,18 +1,21 @@
-FROM node:latest as build
+FROM node:latest AS build
+
+RUN echo "1ere etape"
 
 WORKDIR /app
 
 COPY ./app/package*.json ./
 
+RUN npm install
 
-COPY ./app/srcs ./srcs
+COPY ./app/srcs .
 COPY ./app/tsconfig.json .
 
-RUN npm install
-RUN npm run compile-schemas
 RUN npm run build
 
 FROM node:latest
+
+RUN echo "2eme etape"
 
 WORKDIR /app
 

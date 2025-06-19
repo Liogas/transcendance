@@ -1,53 +1,89 @@
 import fastify from 'fastify';
 
-const server = fastify({logger: true});
+import Database from 'better-sqlite3';
 
-const start = async () => {
-  try {
-    await server.listen({ port: 3000, host: '0.0.0.0' });
-    console.log(`Server listening at localhost:3000`);
-  } catch (err)
-  {
-    server.log.error(err);
-    process.exit(1);
-  }
-};
-
-/*
-* Test pour la notion : json-schema-to-typescript (voir ./schemas/*.json)
-*/
-import BodyRegisterSchema from './schemas/bodyRegister.json';
-import type { BodyRegisterSchema as BodyRegisterSchemaInterface } from './types/bodyRegister';
-
-import HeaderRegisterSchema from './schemas/headersRegister.json';
-import type { HeaderRegisterSchema as HeaderRegisterSchemaInterface } from './types/headersRegister';
-
-import ReplyRegisterSchema from './schemas/replyRegister.json';
-import type { ReplyRegisterSchema as ReplyRegisterSchemaInterface } from './types/replyRegister';
-
-server.post<{
-  Body: BodyRegisterSchemaInterface,
-  Headers: HeaderRegisterSchemaInterface,
-  Reply: ReplyRegisterSchemaInterface
-}>('/register', {
-  schema: {
-    body: BodyRegisterSchema,
-    response: ReplyRegisterSchema,
-    headers: HeaderRegisterSchema
-  }
-}, async (request, reply) => {
-  const {name, pwd} = request.body;
-  const customHeader = request.headers['h-Custom'];
-  console.log(name, pwd, customHeader);
-  reply.code(200).send({success: true});
+const db = new Database('mydb.db', {
+  fileMustExist: false,
+  timeout: 5000,
+  verbose: console.log
 });
 
+try
+{
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      login TEXT UNIQUE NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL
+    )
+  `);
+} catch (err: unknown)
+{
+  if (err instanceof Error)
+    console.error("Erreur lors de la creation de la table : ", err.message);
+  else
+    console.log("L'erreur ne provient pas de sqlite");
+}
 
-/*
-* Test pour la notion : typebox
-*/
+try
+{
+  const rows = db.prepare('SELECT * FROM users').all();
+  console.log(rows);
+} catch (err: unknown)
+{
+  if (err instanceof Error)
+    console.error("Error lors du select * from users", err.message);
+  else
+    console.log("L'erreur ne provient pas de sqlite");
+}
 
-interface IBody
+
+try
+{
+  const insert = db.prepare('INSERT INTO users (login, password, email) VALUES (?, ?, ?)');
+  insert.run('nostag', '1234', 'nostag@example.com');
+  insert.run('lolo', '1235', 'lolo@example.com');
+} catch (err: unknown)
+{
+  if (err instanceof Error)
+    console.error("Error lors de l'insert ", err.message);
+  else
+    console.log("L'erreur ne provient pas de sqlite");
+}
+
+const server = fastify({logger: true});
+
+server.post<{
+  Body: {
+    login: string,
+    email: string,
+    password: string
+  };
+}>('/login', async (request, reply) => {
+  const {login, email, password} = request.body;
+  try
+  {
+    const res = db.prepare('SELECT * FROM users WHERE login=@login AND password=@password AND email=@email ').all({
+      login: login,
+      email: email,
+      password: password
+    })
+    if (res.length != 1)
+      reply.code(200).send({success:false});
+    else
+      reply.code(200).send({success:true});
+  } catch (err: unknown)
+  {
+    if (err instanceof Error)
+      console.error("Error route /login : ", err.message);
+    else
+      console.error("Error route /login mais pas de sqlite");
+   reply.code(400).send({success:false});
+  }
+})
+
+interface IQueryString
 {
   'name': string;
   'pwd': string;
@@ -55,7 +91,7 @@ interface IBody
 
 interface IHeaders
 {
-  'h-custom': string;
+  'h-Custom': string;
 }
 
 interface IReply
@@ -65,46 +101,9 @@ interface IReply
   '4xx': { error: string };
 }
 
-import { Type } from '@sinclair/typebox'
-import type { Static } from '@sinclair/typebox'
-
-export const User = Type.Object({
-  name: Type.String(),
-  pwd: Type.String()
-});
-
-export const SuccessReply = Type.Object({
-  success: Type.Boolean()
-});
-
-export const ErrorReply = Type.Object({
-  error: Type.String()
-})
 
 server.post<{
-  Body: IBody,
-  Headers: IHeaders,
-  Reply: IReply
-}>('/register_typebox', {
-  schema: {
-    body: User,
-    response: {
-      '2xx': SuccessReply,
-      '4xx': ErrorReply
-    }
-  }
-}, async (request, reply) => {
-  const {name, pwd} = request.body;
-  const customHeader = request.headers['h-custom'];
-  console.log(name, pwd, customHeader);
-  reply.code(200).send({success: true});
-});
-
-/*
-* Test pour les notions : type générique & JSON Schema
-*/
-server.post<{
-  Body: IBody,
+  Querystring: IQueryString,
   Headers: IHeaders,
   Reply: IReply
 }>('/register', {
@@ -133,12 +132,25 @@ server.post<{
     }
   }
 }, async (request, reply) => {
-  const {name, pwd} = request.body;
+  const {name, pwd} = request.query;
   const customHeader = request.headers['h-Custom'];
   console.log(name, pwd, customHeader);
   reply.code(200).send({success: true});
+  // reply.code(200).send("ZzZ");
+  // reply.code(404).send({error: 'Not found'});
+  // return `logged in!`;
 });
 
+const start = async () => {
+  try {
+    await server.listen({ port: 3000, host: '0.0.0.0' });
+    console.log(`Server listening at localhost:3000`);
+  } catch (err)
+  {
+    server.log.error(err);
+    process.exit(1);
+  }
+};
 
 
 start();
